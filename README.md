@@ -4,6 +4,22 @@
 
 项目重点不是“让大模型自由操作业务”，而是把 LLM Agent 放进可控、可观测、可恢复的工程边界内。
 
+## 演示视频
+
+在线观看：
+
+https://github.com/Hezhu-Cyber/campus-pilot/blob/main/demo-video/CampusPilot-demo-final.mp4
+
+仓库内位置：
+
+    demo-video/CampusPilot-demo-final.mp4
+
+中文字幕文件：
+
+    demo-video/CampusPilot-demo.srt
+
+视频时长约 65 秒，包含活动查询、提示词注入防护、报名确认、取消报名、转人工工单和管理员处理流程，并配有中文配音与字幕。
+
 ## 技术栈
 
 - Java 17 / Spring Boot / MyBatis-Plus / Redisson
