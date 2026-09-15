@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - name: Test backend
+        working-directory: backend
+        run: mvn -q test
+
+  assistant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: assistant-service/requirements.txt
+      - name: Install assistant dependencies
+        working-directory: assistant-service
+        run: pip install -r requirements.txt
+      - name: Test assistant
+        working-directory: assistant-service
+        run: pytest -q
+      - name: Run agent evaluation
+        working-directory: assistant-service
+        run: python evals/runner.py
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  compose:
+    runs-on: ubuntu-latest
+    env:
+      ASSISTANT_INTERNAL_TOKEN: 0123456789abcdef0123456789abcdef
+      ASSISTANT_USER_CONTEXT_SECRET: abcdef0123456789abcdef0123456789
+      MYSQL_ROOT_PASSWORD: campus-pilot-ci-password
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker compose
+        run: docker compose config --quiet

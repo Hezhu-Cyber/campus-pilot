@@ -1,0 +1,13 @@
+{
+  "mode": "live",
+  "base_url": "http://127.0.0.1:8081",
+  "total_cases": 19,
+  "success": 19,
+  "success_rate": 1.0,
+  "latency_seconds": {
+    "avg": 3.3749026736814383,
+    "p95": 5.881637400016189,
+    "max": 7.703522199997678
+  },
+  "failures": []
+}

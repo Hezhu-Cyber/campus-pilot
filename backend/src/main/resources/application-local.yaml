@@ -1,0 +1,8 @@
+# 本地开发配置：不启动 RocketMQ 消费者，便于只调试页面、助手和只读查询。
+# 启用助手前必须设置 ASSISTANT_INTERNAL_TOKEN 和 ASSISTANT_USER_CONTEXT_SECRET。
+app:
+  assistant:
+    enabled: true
+  registration:
+    mq:
+      enabled: false

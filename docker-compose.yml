@@ -1,0 +1,92 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: campus_pilot
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./backend/src/main/resources/db/campus_pilot.sql:/docker-entrypoint-initdb.d/01-base.sql:ro
+      - ./backend/src/main/resources/db/rocketmq_registration_migration.sql:/docker-entrypoint-initdb.d/02-registration.sql:ro
+      - ./backend/src/main/resources/db/assistant_support_ticket_migration.sql:/docker-entrypoint-initdb.d/03-support.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      CAMPUS_DB_URL: jdbc:mysql://mysql:3306/campus_pilot?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+      CAMPUS_DB_USERNAME: root
+      CAMPUS_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ASSISTANT_ENABLED: "true"
+      ASSISTANT_SERVICE_URL: http://assistant:8011
+      ASSISTANT_INTERNAL_TOKEN: ${ASSISTANT_INTERNAL_TOKEN:?set ASSISTANT_INTERNAL_TOKEN}
+      ASSISTANT_USER_CONTEXT_SECRET: ${ASSISTANT_USER_CONTEXT_SECRET:?set ASSISTANT_USER_CONTEXT_SECRET}
+      EXPOSE_DEMO_CODE: ${EXPOSE_DEMO_CODE:-false}
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  assistant:
+    build:
+      context: ./assistant-service
+    environment:
+      ASSISTANT_JAVA_BASE_URL: http://backend:8081
+      ASSISTANT_INTERNAL_TOKEN: ${ASSISTANT_INTERNAL_TOKEN:?set ASSISTANT_INTERNAL_TOKEN}
+      ASSISTANT_REQUEST_TIMEOUT_SECONDS: "8"
+      ASSISTANT_ASSISTANT_TIMEOUT_SECONDS: "30"
+      ASSISTANT_MODEL_TIMEOUT_SECONDS: ${ASSISTANT_MODEL_TIMEOUT_SECONDS:-12}
+      ASSISTANT_MODEL_BASE_URL: ${ASSISTANT_MODEL_BASE_URL:-}
+      ASSISTANT_MODEL_API_KEY: ${ASSISTANT_MODEL_API_KEY:-}
+      ASSISTANT_MODEL_NAME: ${ASSISTANT_MODEL_NAME:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "8011"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8011/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  redis-data:

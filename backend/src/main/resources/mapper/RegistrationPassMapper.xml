@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.campuspilot.mapper.RegistrationPassMapper">
+
+    <!-- 左连接限量配额，使普通凭证也能返回；仅查询上架状态。 -->
+    <select id="queryPassesByActivity" resultType="com.campuspilot.entity.RegistrationPass" parameterType="java.lang.Long">
+        SELECT
+            rp.`id`, rp.`activity_id`, rp.`title`, rp.`sub_title`, rp.`rules`, rp.`pay_value`,
+            rp.`actual_value`, rp.`type`, quota.`stock`, quota.`begin_time`, quota.`end_time`
+        FROM tb_registration_pass rp
+        LEFT JOIN tb_limited_registration_quota quota ON rp.id = quota.registration_pass_id
+        WHERE rp.activity_id = #{activityId} AND rp.status = 1
+    </select>
+</mapper>

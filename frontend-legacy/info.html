@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>校园派 - 个人主页</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./css/element.css">
+  <link href="./css/main.css" rel="stylesheet">
+  <link href="./css/info.css" rel="stylesheet">
+  <link href="./css/theme.css" rel="stylesheet">
+
+  <style type="text/css">
+      .el-tabs--bottom .el-tabs__item.is-bottom:nth-child(2), .el-tabs--bottom .el-tabs__item.is-top:nth-child(2), .el-tabs--top .el-tabs__item.is-bottom:nth-child(2), .el-tabs--top .el-tabs__item.is-top:nth-child(2) {
+          padding-left: 15px;
+      }
+
+      .el-tabs, .el-tab-pane {
+          height: 100%;
+      }
+
+      .el-tabs__header {
+          height: 10%;
+      }
+
+      .el-tabs__content {
+          height: 90%;
+      }
+
+      .workspace-card {
+          margin: 8px 15px;
+          padding: 9px 12px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-radius: 8px;
+          background: #f4f4ff;
+          color: #4546a8;
+      }
+
+      .workspace-summary {
+          font-size: 12px;
+          color: #777;
+          margin-top: 3px;
+      }
+
+      .content {
+          height: calc(61% - 58px);
+      }
+  </style>
+
+</head>
+
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title">个人主页&nbsp;&nbsp;&nbsp;</div>
+  </div>
+  <div class="basic">
+    <div class="basic-icon">
+      <img :src="user.icon || '/imgs/icons/default-icon.png'" alt="">
+    </div>
+    <div class="basic-info">
+      <div class="name">{{user.nickName}}</div>
+      <span>{{roleName}} · 校园认证用户</span>
+      <div class="edit-btn" @click="toEdit">
+        编辑资料
+      </div>
+    </div>
+    <div class="logout-btn" @click="logout">
+      退出登录
+    </div>
+  </div>
+  <div class="introduce">
+    <span v-if="info.introduce">{{info.introduce}}</span>
+    <span v-else>添加个人简介，让大家更好的认识你 <i class="el-icon-edit"></i></span>
+  </div>
+  <div v-if="user.role === 'ORGANIZER' || user.role === 'ADMIN'" class="workspace-card" style="cursor:pointer" @click="toWorkspace">
+    <div>
+      <div><strong>{{user.role === 'ADMIN' ? '管理员工作台' : '活动组织者工作台'}}</strong></div>
+      <div class="workspace-summary">进入角色专属页面处理平台业务</div>
+    </div>
+    <i class="el-icon-arrow-right"></i>
+  </div>
+  <div class="content">
+    <el-tabs v-model="activeName" @tab-click="handleClick">
+      <el-tab-pane label="动态" name="1">
+        <div v-for="b in posts" :key="b.id" class="post-item">
+          <div class="post-img"><img :src="b.images.split(',')[0]" alt=""></div>
+          <div class="post-info">
+            <div class="post-title">{{b.title}}</div>
+            <div class="post-liked" @click.stop="addLike(b)"><img src="/imgs/thumbup.png" alt=""> {{b.liked}}</div>
+            <div class="post-comments"><i class="el-icon-chat-dot-round"></i> {{b.comments}}</div>
+          </div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="报名" name="2">
+        <div v-if="!registrations.length" style="padding:30px;text-align:center;color:#999">还没有活动报名</div>
+        <div v-for="r in registrations" :key="r.id" class="post-item">
+          <div class="post-info" style="width:100%">
+            <div class="post-title">{{r.activityName || r.title || '校园活动'}}</div>
+            <div style="font-size:12px;color:#777;margin-top:6px">{{r.address}} · {{r.openHours}}</div>
+            <div style="font-size:12px;margin-top:6px">报名编号：{{r.id}} · {{r.status === 4 ? '已取消' : '报名成功'}}</div>
+            <el-button v-if="r.status !== 4" size="mini" type="danger" plain style="margin-top:8px" @click="cancelRegistration(r)">取消报名</el-button>
+          </div>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
+  <foot-bar :active-btn="4"></foot-bar>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script src="./js/footer.js"></script>
+<script>
+  const app = new Vue({
+    el: "#app",
+    data: {
+      user: "",
+      activeName: "1",
+      info: {},
+      posts: [],
+      registrations: [],
+      count: 5,
+    },
+    created() {
+      this.activeName = util.getUrlParam("tab") || "1";
+      this.queryUser();
+      if (this.activeName === "2") {
+        this.queryRegistrations();
+      }
+    },
+    computed: {
+      roleName() { return roleNames[this.user.role] || '学生'; }
+    },
+    methods: {
+      load() {
+        this.count += 2;
+      },
+      queryPosts() {
+        axios.get("/post/mine")
+          .then(({data}) => this.posts = data)
+          .catch(this.$message.error)
+      },
+      queryUser() {
+        // 查询用户信息
+        axios.get("/user/me")
+          .then(({data}) => {
+            // 保存用户
+            this.user = data;
+            // 查询用户详情
+            this.queryUserInfo();
+            // 查询用户笔记
+            this.queryPosts();
+          })
+          .catch(err => {
+            location.href = "login.html"
+          })
+      },
+      goBack() {
+        history.back();
+      },
+      queryUserInfo() {
+        axios.get("/user/info/" + this.user.id)
+          .then(({data}) => {
+            if (!data) {
+              return
+            }
+            // 保存用户详情
+            this.info = data;
+            // 保存到本地
+            sessionStorage.setItem("userInfo", JSON.stringify(data))
+          })
+          .catch(err => {
+            this.$message.error(err);
+          })
+      },
+      toEdit() {
+        location.href = 'info-edit.html'
+      },
+      toWorkspace() {
+        location.href = roleHome(this.user.role)
+      },
+      logout() {
+        axios.post("/user/logout")
+          .then(() => {
+            // 清理session
+            sessionStorage.removeItem("token")
+            // 跳转
+            location.href = "/"
+          })
+          .catch(this.$message.error)
+      },
+      handleClick(r) {
+        if (r.name === '2') {
+          this.queryRegistrations();
+        }
+      },
+      queryRegistrations(){
+        axios.get('/activity-registration/mine').then(({data})=>this.registrations=data || []).catch(this.$message.error)
+      },
+      cancelRegistration(registration){
+        this.$confirm('确认取消这次报名吗？','取消报名',{type:'warning'})
+          .then(()=>axios.delete('/activity-registration/'+registration.id))
+          .then(()=>{registration.status=4;this.$message.success('已取消报名')})
+          .catch(err=>{if(err!=='cancel')this.$message.error(err)})
+      },
+      addLike(b) {
+        axios.put("/post/like/" + b.id)
+          .then(({data}) => {
+            b.isLike = data;
+            b.liked = Math.max(0, (Number(b.liked) || 0) + (data ? 1 : -1));
+          })
+          .catch(err => {
+            this.$message.error(err)
+          })
+      },
+      queryPostById(b) {
+        axios.get("/post/" + b.id)
+          .then(({data}) => {
+            b.liked = data.liked;
+            b.isLike = data.isLike;
+          })
+          .catch(() => {
+            this.$message.error
+            b.liked++;
+          })
+      }
+    },
+
+  })
+</script>
+</body>
+
+</html>

@@ -1,0 +1,16 @@
+.env
+.env.docker
+.env.local
+.idea/
+node_modules/
+target/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.tools/
+users.csv
+*.log
+demo-video/CampusPilot-demo.mp4
+demo-video/CampusPilot-demo-subtitled.mp4
+demo-video/preview-*.png

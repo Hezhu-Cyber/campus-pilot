@@ -1,0 +1,174 @@
+:root {
+    --campus-primary: #5b5ce2;
+    --campus-primary-dark: #4041bd;
+    --campus-secondary: #22b8a7;
+    --campus-accent: #ffb547;
+    --campus-bg: #f4f6fb;
+    --campus-surface: #ffffff;
+    --campus-text: #182033;
+    --campus-muted: #7f8798;
+    --campus-line: #e7eaf2;
+    --campus-radius: 14px;
+    --campus-shadow: 0 8px 24px rgba(38, 46, 92, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: #e9ecf5;
+    color: var(--campus-text);
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+#app {
+    position: relative;
+    max-width: 480px;
+    min-height: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    background: var(--campus-bg);
+    box-shadow: 0 0 40px rgba(34, 40, 74, 0.12);
+}
+
+.search-bar {
+    background: linear-gradient(135deg, var(--campus-primary), #7778ef) !important;
+}
+
+.header {
+    border-bottom: 0 !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 1px 0 var(--campus-line);
+}
+
+.header-back-btn,
+.header-search,
+.active,
+.liked {
+    color: var(--campus-primary) !important;
+}
+
+.el-tabs__active-bar {
+    background: linear-gradient(90deg, var(--campus-primary), var(--campus-secondary)) !important;
+}
+
+.el-tabs__item.is-active,
+.el-tabs__item:hover {
+    color: var(--campus-primary) !important;
+}
+
+.el-button--success,
+.header-commit-btn,
+.registrationPass-btn,
+.logout-btn {
+    border-color: var(--campus-primary) !important;
+    background: linear-gradient(135deg, var(--campus-primary), #7475ed) !important;
+    color: #fff !important;
+}
+
+.type-list,
+.post-box,
+.activity-box,
+.activity-basic,
+.info-box,
+.registrationPass-box {
+    border: 1px solid rgba(231, 234, 242, 0.9);
+    border-radius: var(--campus-radius) !important;
+    box-shadow: var(--campus-shadow) !important;
+}
+
+.type-list {
+    margin: 10px;
+    height: 24% !important;
+    background: var(--campus-surface);
+}
+
+.type-box img {
+    transition: transform 0.18s ease;
+}
+
+.type-box:active img {
+    transform: scale(0.92);
+}
+
+.post-list,
+.activity-list,
+.edit-container {
+    background: var(--campus-bg) !important;
+}
+
+.post-box {
+    overflow: hidden;
+    margin: 6px 0 !important;
+}
+
+.post-img img,
+.post-img2 img,
+.activity-img img,
+.activity-images img,
+.pic-box img {
+    object-fit: cover;
+}
+
+.activity-divider,
+.post-divider,
+.divider {
+    background: var(--campus-bg) !important;
+}
+
+.registrationPass-box {
+    background: linear-gradient(135deg, #f0f0ff, #eefaf8) !important;
+}
+
+.registrationPass-price,
+.limited-registration-time {
+    color: var(--campus-primary) !important;
+}
+
+.comment-tags .tag,
+.comment-tags div {
+    border-color: #b9baf7 !important;
+    background: #f3f3ff;
+    color: var(--campus-primary) !important;
+}
+
+.campus-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 58px;
+    margin-right: 4px;
+    background: linear-gradient(135deg, var(--campus-primary), #7778ef) !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+
+.foot {
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -6px 20px rgba(38, 46, 92, 0.08) !important;
+}
+
+.foot .add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--campus-primary), var(--campus-secondary));
+    color: #fff;
+    font-size: 22px;
+}
+
+.copyright {
+    color: var(--campus-muted) !important;
+}
+
+@media (max-width: 480px) {
+    body {
+        background: var(--campus-bg);
+    }
+
+    #app {
+        width: 100%;
+        box-shadow: none;
+    }
+}

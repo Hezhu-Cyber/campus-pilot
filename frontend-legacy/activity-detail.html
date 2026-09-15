@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>校园派 - 活动详情</title>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="./css/element.css">
+
+  <link href="./css/activity-detail.css" rel="stylesheet">
+  <link href="./css/main.css" rel="stylesheet">
+  <link href="./css/theme.css" rel="stylesheet">
+
+  <style type="text/css">
+    .activity-post-like {
+      color: #5b5ce2;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-back-btn" @click="goBack"><i class="el-icon-arrow-left"></i></div>
+    <div class="header-title"></div>
+    <div class="header-share">...</div>
+  </div>
+  <div class="top-bar"></div>
+  <div class="activity-info-box">
+    <div class="activity-title">{{activity.name}}</div>
+    <div class="activity-rank">
+      <span class="campus-rank-badge">校园榜</span>
+      <span>校园热门活动榜 TOP 3</span>
+      <div><i class="el-icon-arrow-right"></i></div>
+    </div>
+    <div class="activity-images">
+      <div v-for="(s,i) in activity.images" :key="i">
+        <img :src="s" alt="">
+      </div>
+    </div>
+    <div class="activity-address">
+      <div><i class="el-icon-map-location"></i></div>
+      <span>{{activity.address}}</span>
+      <div style="width: 10px; flex-grow: 2; text-align: center; color: #e1e2e3">|</div>
+      <div style="margin: 0 8px"><i class="el-icon-bicycle"></i></div>
+      <div><i class="el-icon-phone-outline"></i></div>
+    </div>
+  </div>
+  <div class="activity-divider"></div>
+  <div class="activity-open-time">
+    <span><i class="el-icon-watch"></i></span>
+    <div>开放时间</div>
+    <div>{{activity.openHours}}</div>
+    <span class="line-right">查看详情 <i class="el-icon-arrow-right"></i></span>
+  </div>
+  <div class="activity-divider"></div>
+  <div class="activity-registrationPass">
+    <div>
+      <span class="registrationPass-icon">报</span>
+      <span style="font-weight: bold;">活动报名</span>
+    </div>
+    <div class="registrationPass-box" v-for="v in registrationPasses" :key="v.id" v-if="!isEnd(v)">
+      <div class="registrationPass-circle">
+        <div class="registrationPass-b"></div>
+        <div class="registrationPass-b"></div>
+        <div class="registrationPass-b"></div>
+      </div>
+      <div class="registrationPass-left">
+        <div class="registrationPass-title">{{v.title}}</div>
+        <div class="registrationPass-subtitle">{{v.subTitle}}</div>
+        <div class="registrationPass-price"><div>{{v.payValue > 0 ? '报名费用：￥' + util.formatPrice(v.payValue) : '免费报名'}}</div></div>
+      </div>
+      <div class="registrationPass-right">
+        <div v-if="v.type" class="limited-registration-box">
+          <div class="registrationPass-btn" :class="{'disable-btn': isNotBegin(v) || v.stock < 1}" @click="limitedRegister(v)">限时抢名额</div>
+          <div class="limited-registration-stock">剩余 <span>{{v.stock}}</span> 个</div>
+          <div class="limited-registration-time">{{formatTime(v)}}</div>
+        </div>
+        <div class="registrationPass-btn" v-else @click="register(v)">立即报名</div>
+      </div>
+    </div>
+  </div>
+  <div class="activity-divider"></div>
+  <div class="activity-comments">
+    <div class="comments-head">
+      <div>同学动态 <span>（{{activityPostTotal}}）</span></div>
+      <div><i class="el-icon-arrow-right"></i></div>
+    </div>
+    <div class="comment-list">
+      <div class="comment-box" v-for="post in activityPosts" :key="post.id" @click="location.href='/post-detail.html?id='+post.id">
+        <div class="comment-icon">
+          <img :src="post.icon || '/imgs/icons/default-icon.png'" alt="">
+        </div>
+        <div class="comment-info">
+          <div class="comment-user">{{post.name || '校园同学'}}</div>
+          <div style="padding: 5px 0; font-size: 14px;font-weight:bold">{{post.title}}</div>
+          <div style="padding: 5px 0; font-size: 13px">{{post.content}}</div>
+          <div><span class="activity-post-like" @click.stop="addLike(post)">点赞 {{post.liked || 0}}</span>评论 {{post.comments || 0}}</div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-between;padding: 15px 0; border-top: 1px solid #f1f1f1; margin-top: 10px;">
+        <div>{{activityPosts.length ? '点击动态查看讨论详情' : '还没有同学发布活动体验'}}</div>
+        <div><i class="el-icon-arrow-right"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="activity-divider"></div>
+  <div class="copyright">
+    校园派 · 让每一次校园相遇都有意义
+  </div>
+</div>
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<!-- 引入组件库 -->
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script>
+
+  const app = new Vue({
+    el: "#app",
+    data: {
+      util,
+      activity: {},
+      registrationPasses: [],
+      activityPosts: [],
+      activityPostTotal: 0
+    },
+    created() {
+      // 获取参数
+      let activityId = util.getUrlParam("id");
+      // 查询活动或场馆信息
+      this.queryActivityById(activityId);
+      // 查询活动报名信息
+      this.queryRegistrationPasses(activityId);
+      this.queryActivityPosts(activityId);
+    },
+    methods: {
+      goBack() {
+        history.back();
+      },
+      queryActivityById(activityId) {
+        axios.get("/activity/" + activityId)
+        .then(({data}) => {
+          data.images = data.images.split(",")
+          this.activity = data
+        })
+        .catch(this.$message.error)
+      },
+      queryRegistrationPasses(activityId) {
+        axios.get("/registration-pass/activity/" + activityId)
+        .then(({data}) => {
+          this.registrationPasses = data;
+        })
+        .catch(this.$message.error)
+      },
+      formatTime(v){
+        let b = new Date(v.beginTime);
+        let e = new Date(v.endTime);
+        return b.getMonth() + 1 + "月" + b.getDate() + "日 "
+          +  b.getHours() + ":" + this.formatMinutes(b.getMinutes())
+          + " ~ "/*  + e.getMonth() + 1 + "月" + e.getDate() + "日 " */
+          +  e.getHours() + ":" + this.formatMinutes(e.getMinutes());
+      },
+      formatMinutes(m){
+        if(m < 10) m = "0" + m
+        return m;
+      },
+      isNotBegin(v){
+        return new Date(v.beginTime).getTime() > new Date().getTime();
+      },
+      isEnd(v){
+        return new Date(v.endTime).getTime() < new Date().getTime();
+      },
+      limitedRegister(v){
+        if(!token){
+          this.$message.error("请先登录")
+          // 未登录，跳转
+          setTimeout(() => {
+            location.href = "/login.html"
+          }, 200);
+          return;
+        }
+        if(this.isNotBegin(v)){
+          this.$message.error("限量报名尚未开始！")
+          return;
+        }
+        if(this.isEnd(v)){
+          this.$message.error("限量报名已经结束！")
+          return;
+        }
+        if(v.stock < 1){
+          this.$message.error("库存不足，请刷新再试试！")
+          return;
+        }
+        let id = v.id;
+        // 限量报名
+        axios.post("/activity-registration/limited/" + id)
+        .then(({data}) => {
+          if(!data || !data.registrationId){
+            this.$message.error("报名受理结果异常，请稍后查询")
+            return
+          }
+          if(data.status === "SUCCESS"){
+            this.$message.success("报名成功，报名编号：" + data.registrationId)
+            return
+          }
+          this.$message.info("报名已受理，正在确认名额")
+          this.pollRegistrationStatus(data.registrationId, 0)
+        })
+        .catch(this.$message.error)
+      },
+      pollRegistrationStatus(registrationId, attempts){
+        if(attempts >= 20){
+          this.$message.warning("报名仍在处理中，请稍后到个人中心查看")
+          return
+        }
+        setTimeout(() => {
+          axios.get("/activity-registration/" + registrationId + "/status")
+            .then(({data}) => {
+              if(data.status === "SUCCESS"){
+                this.$message.success("报名成功，报名编号：" + registrationId)
+              } else if(data.status === "FAILED" || data.status === "COMPENSATED"){
+                this.$message.error(data.failureReason || "报名失败，名额已回补")
+              } else {
+                this.pollRegistrationStatus(registrationId, attempts + 1)
+              }
+            })
+            .catch(() => this.pollRegistrationStatus(registrationId, attempts + 1))
+        }, 500)
+      },
+      queryActivityPosts(activityId) {
+        axios.get('/post/by-activity?id=' + activityId)
+          .then(resp => { this.activityPosts = resp.data || []; this.activityPostTotal = resp.total || 0 })
+          .catch(this.$message.error)
+      },
+      addLike(post) {
+        axios.put('/post/like/' + post.id)
+          .then(({data}) => {
+            post.isLike = data;
+            post.liked = Math.max(0, (Number(post.liked) || 0) + (data ? 1 : -1));
+          })
+          .catch(this.$message.error)
+      },
+      register(v){
+        if(!token){
+          this.$message.error("请先登录");
+          setTimeout(() => location.href = "/login.html", 200);
+          return;
+        }
+        this.$confirm("确认报名“" + v.title + "”吗？", "报名确认", {type: "info"})
+          .then(() => axios.post("/activity-registration/" + v.id))
+          .then(({data}) => this.$message.success("报名成功，报名编号：" + data))
+          .catch(err => { if(err !== "cancel") this.$message.error(err) })
+      }
+    }
+  })
+</script>
+</body>
+</html>

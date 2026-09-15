@@ -1,0 +1,93 @@
+# HTTP 服务端口。
+server:
+  port: 8081
+# 应用名称、MySQL、Redis 连接池与 JSON 序列化。环境变量可覆盖本地默认值。
+spring:
+  application:
+    name: campus-pilot
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: ${CAMPUS_DB_URL:jdbc:mysql://127.0.0.1:3306/campus_pilot?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8}
+    username: ${CAMPUS_DB_USERNAME:root}
+    password: ${CAMPUS_DB_PASSWORD:}
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    #Redis Lettuce 连接池；控制你的应用同时能用多少个 Redis 连接，以及连接池多久清理一次空闲连接。
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        time-between-eviction-runs: 10s
+#   通过jackson减少没意义的null字段
+  jackson:
+    default-property-inclusion: non_null # JSON 响应不输出 null 字段。
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:campus-registration-producer}
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+    retry-times-when-send-async-failed: 2
+# MyBatis-Plus 实体别名扫描。
+mybatis-plus:
+#  type-aliases-package 用来指定实体类所在的包，MyBatis-Plus 会扫描这些类并注册别名
+  type-aliases-package: com.campuspilot.entity
+# 高峰期同步输出 SQL 调试日志会成为明显瓶颈，需要排查时再临时开启 DEBUG。
+logging:
+  level:
+    com.campuspilot: info
+# 项目自定义开关：图片目录、启动重建 Redis，以及是否为演示环境返回验证码。
+app:
+  upload-dir: ${UPLOAD_DIR:../frontend/public/imgs}
+#  /initialize-redis 表示项目启动时是否初始化 Redis：
+  initialize-redis: ${INITIALIZE_REDIS:true}
+  auth:
+    expose-demo-code: ${EXPOSE_DEMO_CODE:false}
+  assistant:
+    # 默认关闭，只有显式配置全部密钥后才启用。
+    enabled: ${ASSISTANT_ENABLED:false}
+    python-base-url: ${ASSISTANT_SERVICE_URL:http://127.0.0.1:8011}
+    internal-token: ${ASSISTANT_INTERNAL_TOKEN:}
+    user-context-secret: ${ASSISTANT_USER_CONTEXT_SECRET:}
+    user-context-ttl-seconds: ${ASSISTANT_USER_CONTEXT_TTL_SECONDS:60}
+    connect-timeout-millis: ${ASSISTANT_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-millis: ${ASSISTANT_READ_TIMEOUT_MS:35000}
+    history-max-messages: ${ASSISTANT_HISTORY_MAX_MESSAGES:12}
+    history-ttl-days: ${ASSISTANT_HISTORY_TTL_DAYS:7}
+    rate-limit-per-minute: ${ASSISTANT_RATE_LIMIT_PER_MINUTE:20}
+  registration:
+    mq:
+      #表示是否启用报名模块的 MQ 功能。
+      enabled: ${REGISTRATION_MQ_ENABLED:true}
+      topic: ${REGISTRATION_MQ_TOPIC:campus-registration}
+      consumer-group: ${REGISTRATION_MQ_CONSUMER_GROUP:registration-persist-group}
+#      死信 Topic:一条消息一直消费失败，重试很多次还是处理不了，就把它放到一个专门的地方。
+      dead-letter-topic: ${REGISTRATION_DLQ_TOPIC:campus-registration-dead-letter}
+#      表示专门处理死信消息的消费者组。把最终处理失败的报名消息记录下来，比如保存到数据库，方便之后人工排查或者重新处理。
+      dead-letter-consumer-group: ${REGISTRATION_DLQ_CONSUMER_GROUP:registration-dead-letter-store-group}
+#      RocketMQ 事务消息相关状态保存 7 天。
+      transaction-state-ttl-seconds: 604800
+#      用于判断一个报名请求是不是“卡住了”。超过 30 秒没完成，就认为可能异常；系统每隔 60 秒检查一次这些异常请求。
+      stale-request-seconds: 30
+      reconcile-fixed-delay-millis: 60000
+#  属于 Spring Boot Actuator。
+management:
+  health:
+#    关闭 Actuator 对 Redis 的健康检查。
+    redis:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+#        只允许通过 HTTP 暴露这三个 Actuator Endpoint。
+        include: health,info,prometheus
+  endpoint:
+    health:
+#      /actuator/health 的详细健康信息，只有经过授权的用户才能看到。
+      show-details: when_authorized
+
+
+

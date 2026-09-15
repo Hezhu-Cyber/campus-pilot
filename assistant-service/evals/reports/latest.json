@@ -1,0 +1,20 @@
+{
+  "mode": "offline",
+  "total_cases": 33,
+  "checks": {
+    "routing": 26,
+    "action": 29,
+    "handoff": 29,
+    "guard": 3,
+    "privacy": 1
+  },
+  "passed": {
+    "routing": 26,
+    "action": 29,
+    "handoff": 29,
+    "guard": 3,
+    "privacy": 1
+  },
+  "pass_rate": 1.0,
+  "failures": []
+}

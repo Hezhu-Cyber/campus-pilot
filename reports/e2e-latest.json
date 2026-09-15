@@ -1,0 +1,39 @@
+{
+  "steps": [
+    {
+      "name": "backend_health",
+      "ok": true
+    },
+    {
+      "name": "assistant_health",
+      "ok": true
+    },
+    {
+      "name": "authenticated_user",
+      "ok": true
+    },
+    {
+      "name": "read_chat",
+      "ok": true,
+      "answerLength": 287
+    },
+    {
+      "name": "prompt_injection_guard",
+      "ok": true
+    },
+    {
+      "name": "support_ticket",
+      "ok": true
+    },
+    {
+      "name": "confirmation_preparation",
+      "ok": true,
+      "createdPendingAction": true
+    }
+  ],
+  "startedAt": 1789449907.3904612,
+  "assistantMode": "llm",
+  "userId": "3",
+  "ok": true,
+  "durationSeconds": 6.290466070175171
+}

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>校园派 - 管理员工作台</title>
+  <link rel="stylesheet" href="./css/element.css">
+  <link rel="stylesheet" href="./css/main.css">
+  <link rel="stylesheet" href="./css/theme.css">
+  <link rel="stylesheet" href="./css/role-portal.css">
+</head>
+<body>
+<div id="app" class="role-portal" v-loading="loading">
+  <header class="portal-header">
+    <div class="portal-brand"><i class="el-icon-s-tools"></i>校园派管理后台</div>
+    <div class="portal-user">
+      <span>{{user.nickName}}</span>
+      <span class="role-badge">管理员</span>
+      <el-button size="mini" plain @click="logout">退出登录</el-button>
+    </div>
+  </header>
+
+  <main class="portal-main">
+    <section class="portal-hero">
+      <div>
+        <h1>系统管理工作台</h1>
+        <p>查看平台用户角色和活动信息；管理员同时拥有活动组织者权限。</p>
+      </div>
+      <div class="hero-actions">
+        <el-button plain @click="go('/')">访问学生端</el-button>
+      </div>
+    </section>
+
+    <section class="portal-grid">
+      <div class="portal-card shortcut-card" @click="go('/organizer.html')">
+        <i class="el-icon-s-flag"></i><strong>活动组织工作台</strong><span>创建活动并查看自己发布的活动</span>
+      </div>
+      <div class="portal-card shortcut-card" @click="go('/')">
+        <i class="el-icon-view"></i><strong>内容与活动巡查</strong><span>从学生视角检查公开内容和活动展示</span>
+      </div>
+      <div class="portal-card shortcut-card" @click="go('/info.html')">
+        <i class="el-icon-user"></i><strong>管理员个人中心</strong><span>维护头像、昵称和个人资料</span>
+      </div>
+    </section>
+
+    <section class="portal-card">
+      <div class="section-title">
+        <div><h2>用户与角色</h2><div class="card-subtitle">共 {{total}} 个用户，列表不返回密码等敏感信息</div></div>
+        <div class="search-row">
+          <el-input v-model.trim="keyword" clearable placeholder="搜索手机号或昵称" @keyup.enter.native="search"></el-input>
+          <el-button type="primary" @click="search">查询</el-button>
+        </div>
+      </div>
+      <el-table :data="users" stripe style="width:100%">
+        <el-table-column prop="id" label="ID" width="70"></el-table-column>
+        <el-table-column prop="nickName" label="昵称" min-width="150"></el-table-column>
+        <el-table-column prop="phone" label="手机号" min-width="130"></el-table-column>
+        <el-table-column label="角色" width="120">
+          <template slot-scope="scope">
+            <el-tag :type="tagType(scope.row.role)" size="small">{{roleNames[scope.row.role] || scope.row.role}}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" min-width="165"></el-table-column>
+      </el-table>
+      <div class="pagination-row">
+        <el-pagination background layout="prev, pager, next" :page-size="20" :total="total" :current-page="current" @current-change="changePage"></el-pagination>
+      </div>
+    </section>
+
+    <section class="portal-card" style="margin-top:16px">
+      <div class="section-title"><div><h2>近期活动</h2><div class="card-subtitle">快速检查当前公开活动</div></div></div>
+      <div v-if="!activities.length" class="empty-state">暂无活动数据</div>
+      <div v-for="item in activities" :key="item.id" class="activity-row">
+        <img class="activity-cover" :src="cover(item.images)" alt="活动封面">
+        <div class="activity-body">
+          <div class="activity-name">{{item.name}}</div>
+          <div class="activity-meta">组织者 ID：{{item.organizerId || '-'}} · {{item.area || '未填写区域'}} · {{item.address}}</div>
+        </div>
+        <el-button size="mini" @click="go('/activity-detail.html?id=' + item.id)">查看</el-button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="./js/vue.js"></script>
+<script src="./js/axios.min.js"></script>
+<script src="./js/element.js"></script>
+<script src="./js/common.js"></script>
+<script>
+  new Vue({
+    el: '#app',
+    data: {
+      roleNames,
+      loading: true,
+      user: {},
+      users: [],
+      activities: [],
+      keyword: '',
+      current: 1,
+      total: 0
+    },
+    created() {
+      requireRole(['ADMIN'])
+        .then(user => {
+          this.user = user;
+          return Promise.all([this.loadUsers(), this.loadActivities()]);
+        })
+        .catch(error => { if (error !== '当前账号无权访问该页面') this.$message.error(error); })
+        .finally(() => this.loading = false);
+    },
+    methods: {
+      go(path) { location.href = path; },
+      cover(images) { return (images || '/imgs/campus/lecture-banner.svg').split(',')[0]; },
+      tagType(role) {
+        if (role === 'ADMIN') return 'danger';
+        if (role === 'ORGANIZER') return 'warning';
+        return 'success';
+      },
+      loadUsers() {
+        return axios.get('/user/admin/users', {params: {current: this.current, keyword: this.keyword}})
+          .then(({data}) => {
+            this.users = data.records || [];
+            this.total = Number(data.total) || 0;
+            this.current = Number(data.current) || 1;
+          });
+      },
+      loadActivities() {
+        return axios.get('/activity/search', {params: {current: 1}})
+          .then(({data}) => this.activities = data || []);
+      },
+      search() { this.current = 1; this.loadUsers().catch(this.$message.error); },
+      changePage(page) { this.current = page; this.loadUsers().catch(this.$message.error); },
+      logout() {
+        axios.post('/user/logout').finally(() => {
+          sessionStorage.clear();
+          location.href = '/login.html';
+        });
+      }
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "requests": 100,
+  "concurrency": 20,
+  "success": 100,
+  "successRate": 1.0,
+  "elapsedSeconds": 37.48427867889404,
+  "throughputRps": 2.667785096163693,
+  "latencySeconds": {
+    "avg": 6.849103035996668,
+    "p50": 6.7159472000203095,
+    "p95": 8.958385300007649,
+    "max": 10.76038900000276
+  },
+  "errors": []
+}
