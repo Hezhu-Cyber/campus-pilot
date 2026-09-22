@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 public class RegistrationDeadLetterConsumer implements RocketMQListener<RegistrationDeadLetterMessage> {
     private final RegistrationDeadLetterMapper mapper;
     private final RegistrationMessageCodec codec;
+    private final RegistrationMqProperties properties;
 
     @Override
     public void onMessage(RegistrationDeadLetterMessage message) {
@@ -37,10 +38,13 @@ public class RegistrationDeadLetterConsumer implements RocketMQListener<Registra
         record.setRegistrationId(message.getOriginalMessage().getRegistrationId());
         record.setMessageId(message.getRocketMqMessageId());
         record.setReconsumeTimes(message.getReconsumeTimes());
+        record.setRetryCount(0);
+        record.setNextRetryTime(LocalDateTime.now()
+                .plusSeconds(properties.getDeadLetterAutoRetryInitialDelaySeconds()));
         record.setFailureCode(message.getFailureCode());
         record.setFailureReason(message.getFailureReason());
         record.setPayload(codec.encode(message));
-        record.setStatus("PENDING");
+        record.setStatus(RegistrationDeadLetterStatus.PENDING.name());
         record.setCreateTime(LocalDateTime.now());
         record.setUpdateTime(LocalDateTime.now());
         try {

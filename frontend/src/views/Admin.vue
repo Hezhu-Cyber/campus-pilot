@@ -79,7 +79,7 @@
           <div class="cp-row-between" style="margin-bottom:16px">
             <h2 class="cp-section-title" style="margin:0"><el-icon><Warning /></el-icon>报名死信（{{ dlTotal }}）</h2>
             <div class="cp-gap">
-              <span class="cp-muted">重放会重新预占名额并再次投递处理</span>
+              <span class="cp-muted">自动重放仅处理可恢复错误，人工确认后再重放永久错误</span>
               <el-button type="primary" plain @click="loadDeadLetters(1)">刷新</el-button>
             </div>
           </div>
@@ -89,15 +89,18 @@
             <el-table-column prop="failureCode" label="失败码" width="180" />
             <el-table-column prop="failureReason" label="失败原因" min-width="220" show-overflow-tooltip />
             <el-table-column prop="reconsumeTimes" label="重试次数" width="90" />
+            <el-table-column prop="retryCount" label="自动重试" width="90" />
             <el-table-column prop="createTime" label="产生时间" min-width="160" />
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="nextRetryTime" label="下次重试" min-width="160" />
+            <el-table-column prop="lastRetryTime" label="最近重试" min-width="160" />
+            <el-table-column prop="status" label="状态" width="140">
               <template #default="{ row }">
-                <el-tag size="small" :type="row.status === 'REPLAYED' ? 'success' : 'danger'" round>{{ row.status }}</el-tag>
+                <el-tag size="small" :type="deadLetterTagType(row.status)" round>{{ deadLetterStatusName(row.status) }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="{ row }">
-                <el-button size="small" type="primary" plain :disabled="row.status === 'REPLAYED'" :loading="row.replaying" @click="replay(row)">重放</el-button>
+                <el-button size="small" type="primary" plain :disabled="deadLetterReplayDisabled(row.status)" :loading="row.replaying" @click="replay(row)">重放</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -154,6 +157,20 @@ const supportTotal = ref(0)
 const cover = (a) => imgUrl((a.images || '').split(',')[0])
 const tagType = (r) => r === 'ADMIN' ? 'danger' : r === 'ORGANIZER' ? 'warning' : 'success'
 const supportTagType = (s) => s === 'OPEN' ? 'warning' : s === 'PROCESSING' ? 'primary' : s === 'RESOLVED' ? 'success' : 'info'
+const deadLetterTagType = (s) => {
+  if (s === 'REPLAYED' || s === 'AUTO_REPLAYED') return 'success'
+  if (s === 'AUTO_RETRYING') return 'warning'
+  if (s === 'PENDING') return 'info'
+  return 'danger'
+}
+const deadLetterStatusName = (s) => ({
+  PENDING: '待处理',
+  AUTO_RETRYING: '自动重试中',
+  AUTO_REPLAYED: '自动重放完成',
+  MANUAL_REQUIRED: '待人工处理',
+  REPLAYED: '人工重放完成',
+}[s] || s)
+const deadLetterReplayDisabled = (s) => ['REPLAYED', 'AUTO_REPLAYED', 'AUTO_RETRYING'].includes(s)
 
 async function loadUsers() {
   try {

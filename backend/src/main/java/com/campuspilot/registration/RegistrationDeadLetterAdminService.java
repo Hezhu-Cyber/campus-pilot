@@ -21,6 +21,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RegistrationDeadLetterAdminService {
+    private static final String REPLAYED = "REPLAYED";
+    private static final String AUTO_REPLAYED = "AUTO_REPLAYED";
+    private static final String AUTO_RETRYING = "AUTO_RETRYING";
+
     private final RegistrationDeadLetterMapper deadLetterMapper;
     private final RegistrationMessageCodec codec;
     private final RegistrationRequestRepository requestRepository;
@@ -49,12 +53,24 @@ public class RegistrationDeadLetterAdminService {
      * 幂等：已重放或流水状态不允许重置时直接拒绝。
      */
     public Result replay(Long id) {
+        return replay(id, false);
+    }
+
+    /** 供无人值守任务调用：成功状态标记为 AUTO_REPLAYED。 */
+    public Result replayAutomatically(Long id) {
+        return replay(id, true);
+    }
+
+    private Result replay(Long id, boolean automatic) {
         RegistrationDeadLetter deadLetter = deadLetterMapper.selectById(id);
         if (deadLetter == null) {
             return Result.fail("死信记录不存在");
         }
-        if ("REPLAYED".equals(deadLetter.getStatus())) {
-            return Result.fail("该死信已重放过，请勿重复操作");
+        if (REPLAYED.equals(deadLetter.getStatus()) || AUTO_REPLAYED.equals(deadLetter.getStatus())) {
+            return Result.fail("该死信已处理完成，请勿重复操作");
+        }
+        if (!automatic && AUTO_RETRYING.equals(deadLetter.getStatus())) {
+            return Result.fail("该死信正在自动重放，请稍后刷新");
         }
         RegistrationDeadLetterMessage payload;
         try {
@@ -87,12 +103,14 @@ public class RegistrationDeadLetterAdminService {
                     "REPLAY_SEND_FAILED", "重放消息发送失败，请稍后重试");
             return Result.fail("重放消息发送失败，流水已置为失败可重新报名");
         }
-        deadLetter.setStatus("REPLAYED");
+        deadLetter.setStatus(automatic ? AUTO_REPLAYED : REPLAYED);
         deadLetter.setUpdateTime(java.time.LocalDateTime.now());
+        deadLetter.setLastRetryTime(deadLetter.getUpdateTime());
+        deadLetter.setNextRetryTime(null);
         deadLetterMapper.updateById(deadLetter);
         metrics.accepted();
-        log.info("registration dead letter replayed deadLetterId={} registrationId={}",
-                id, retry.getRegistrationId());
+        log.info("registration dead letter replayed deadLetterId={} registrationId={} automatic={}",
+                id, retry.getRegistrationId(), automatic);
         return Result.ok();
     }
 }

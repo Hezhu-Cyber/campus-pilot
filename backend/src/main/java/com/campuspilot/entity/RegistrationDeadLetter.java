@@ -18,6 +18,9 @@ public class RegistrationDeadLetter implements Serializable {
     private Long registrationId;
     private String messageId;
     private Integer reconsumeTimes;
+    private Integer retryCount;
+    private LocalDateTime nextRetryTime;
+    private LocalDateTime lastRetryTime;
     private String failureCode;
     private String failureReason;
     private String payload;

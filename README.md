@@ -151,7 +151,7 @@ Python：
     assistant-service/  FastAPI + LangGraph Agent、工具、评测
     frontend/           Vue 3 用户端和管理员工作台
     docs/               架构、评测和面试说明
-    scripts/            端到端和压测脚本
+    scripts/            端到端、压测和报名并发测试脚本
 
 ## 工程亮点
 

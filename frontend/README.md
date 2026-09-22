@@ -30,7 +30,6 @@ npm run serve
 - `src/router.js`：路由与登录/角色守卫
 - `public/imgs/`：图片资源目录（后端上传目录指向这里）
 - `server.mjs`：生产托管脚本，`/api/*` 代理到后端，`/imgs/*` 直接读取 `public/imgs`
-- `frontend-legacy/`：旧版前端备份
 
 ## 常用账号
 | 角色 | 手机号 | 说明 |

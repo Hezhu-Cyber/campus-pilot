@@ -95,6 +95,34 @@ class RegistrationDeadLetterAdminServiceTest {
         verify(requestRepository, never()).resetForRetry(anyLong(), anyString());
     }
 
+    @Test
+    void automaticReplayMarksAutoReplayed() {
+        RegistrationDeadLetter deadLetter = deadLetter("payload-1", "AUTO_RETRYING");
+        when(deadLetterMapper.selectById(1L)).thenReturn(deadLetter);
+        RegistrationMessage original = new RegistrationMessage("event-1", 100L, 10L, 20L, 1L, 1);
+        RegistrationDeadLetterMessage payload = new RegistrationDeadLetterMessage(
+                original, "msg-1", 7, "RETRY_EXHAUSTED", "timeout", 1L);
+        when(codec.decodeDeadLetter("payload-1")).thenReturn(payload);
+        when(requestRepository.resetForRetry(eq(100L), anyString())).thenReturn(1);
+
+        Result result = service.replayAutomatically(1L);
+
+        assertEquals(true, result.getSuccess());
+        assertEquals("AUTO_REPLAYED", deadLetter.getStatus());
+        verify(deadLetterMapper).updateById(deadLetter);
+    }
+
+    @Test
+    void manualReplayRejectsRecordAlreadyBeingAutoRetried() {
+        RegistrationDeadLetter deadLetter = deadLetter("payload-1", "AUTO_RETRYING");
+        when(deadLetterMapper.selectById(1L)).thenReturn(deadLetter);
+
+        Result result = service.replay(1L);
+
+        assertFalse(result.getSuccess());
+        verify(requestRepository, never()).resetForRetry(anyLong(), anyString());
+    }
+
     private RegistrationDeadLetter deadLetter(String payload, String status) {
         RegistrationDeadLetter deadLetter = new RegistrationDeadLetter();
         deadLetter.setId(1L);

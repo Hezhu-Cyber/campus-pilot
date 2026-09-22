@@ -171,6 +171,9 @@ CREATE TABLE `tb_registration_dead_letter` (
   `registration_id` bigint NOT NULL,
   `message_id` varchar(128) DEFAULT NULL,
   `reconsume_times` int NOT NULL DEFAULT 0,
+  `retry_count` int NOT NULL DEFAULT 0,
+  `next_retry_time` timestamp NULL DEFAULT NULL,
+  `last_retry_time` timestamp NULL DEFAULT NULL,
   `failure_code` varchar(64) DEFAULT NULL,
   `failure_reason` varchar(512) DEFAULT NULL,
   `payload` text,
@@ -178,7 +181,8 @@ CREATE TABLE `tb_registration_dead_letter` (
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_registration_dead_letter_event` (`event_id`)
+  UNIQUE KEY `uk_registration_dead_letter_event` (`event_id`),
+  KEY `idx_registration_dead_letter_retry` (`status`, `next_retry_time`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报名异常待处理记录';
 
 INSERT INTO `tb_user` (`id`, `phone`, `nick_name`, `icon`, `role`) VALUES
